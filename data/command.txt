@@ -1,0 +1,2 @@
+./pimass-lin -g input/test.mgt.txt -p input/test.ph.txt -w 10000 -s 100000 -o pref -num 10
+./pimass-lin -g input/test.h20.mgt.txt -o test.h20.txt -s 100000 -w 10000 -num 100 --exclude-maf 0.01 -nstart 50 -smax 500 -pmin 1 -pmax 1000 

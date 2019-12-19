@@ -1,0 +1,25 @@
+PLINK v1.90b4.1 64-bit (30 Mar 2017)
+Options in effect:
+  --bfile /storage/nipm/kerimbae/mgs_scz/scz
+  --out qcvcf
+  --pca 10
+
+Hostname: cherry-creek.nscee.edu
+Working directory: /storage/nipm/kerimbae/mgs_scz
+Start time: Mon Nov 12 11:47:56 2018
+
+Random number seed: 1542052076
+128738 MB RAM detected; reserving 64369 MB for main workspace.
+638937 variants loaded from .bim file.
+5334 people (3134 males, 2200 females) loaded from .fam.
+5334 phenotype values loaded from .fam.
+Using up to 23 threads (change this with --threads).
+Before main variant filters, 5306 founders and 28 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.99806.
+638937 variants and 5334 people pass filters and QC.
+Among remaining phenotypes, 2681 are cases and 2653 are controls.
+Relationship matrix calculation complete.
+--pca: Results saved to qcvcf.eigenval and qcvcf.eigenvec .
+
+End time: Mon Nov 12 11:54:09 2018
