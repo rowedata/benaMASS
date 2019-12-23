@@ -87,7 +87,7 @@ def swap(gamma):
     return gamma
 
 
-def propose(gamma,h):
+def propose(gamma, h, p):
     a = gamma
     gamma_prop = swap(a)
 # propose pi
@@ -95,11 +95,11 @@ def propose(gamma,h):
     pi_prop = np.random.beta(a, p - a + 1, size = None)
     print("proposed pi" , pi_prop)
 # propose h
-    h_prop = h  + np.random.uniform(-0.1,0.1)
+    h_prop = h  + np.random.uniform(-0.1, 0.1)
     
     return h_prop, pi_prop, gamma_prop
 
-def calculate_r(): 
+def calculate_r(h_prop, pi_prop, gamma_prop, h, pi, gamma): 
 
     #h
     uniform.ppf(h)
@@ -109,64 +109,123 @@ def calculate_r():
     uniform.ppf(pi)
     uniform.ppf(pi_prop)
     
-    #gamma vect
-    gamma_df = pd.DataFrame(data = gamma)
-    gamma_df.loc[gamma==0, 'new'] = pi
-    gamma_df.loc[gamma==1, 'new'] = 1 - pi
+    #gamma
+    g = pi**gamma.sum()*(1-pi)**(p-gamma.sum()) 
+    g_prop = pi_prop**gamma.sum()*(1-pi_prop)**(p-gamma.sum())
     
-    gamma_prop_df =pd.DataFrame(data = gamma_prop)
-    gamma_prop_df.loc[gamma==0, 'new'] = pi_prop
-    gamma_prop_df.loc[gamma==1, 'new'] = 1 - pi_prop
+    #y current
     
-    gamma_prop_df.new
-    gamma_df.new
+    G = genotype.iloc[:, 4:984]
     
-    #y
+    Q = G.T.dot(beta).reset_index()
+    Q = Q.drop(columns = 'index')
     
-    G = genotype.iloc[:,4:984]
-    Q = G.T.dot(beta)
-    mean = (mu + Q).T
+    mean = np.array(mu + Q).ravel()
     cov = np.identity(980) * (1 / tau)
-    y = np.random.multivariate_normal(mean, cov)
-    norm.pdf(y)
+    ys = np.random.multivariate_normal(mean, cov)
+    mylist = norm.pdf(ys)
+    y = np.prod(np.array(mylist))
+
+    #proposed
+    gamma_df = pd.DataFrame(data = gamma_prop)
+    gamma_df.loc[gamma==1] = beta
+    beta_prop=gamma_df
+    
+    
+    Q_prop = G.T.dot(beta_prop).reset_index()
+    Q_prop = Q_prop.drop(columns = 'index')
+    
+    mean_prop = np.array(mu + Q_prop).ravel()
+    ys= np.random.multivariate_normal(mean_prop, cov)
+    mylist = norm.pdf(ys)
+    y_prop = np.prod(np.array(mylist))
+    
+    r = (uniform.ppf(h_prop)*uniform.ppf(pi_prop)*g_prop* )/()
+    
+    if (u < r): 
+        h = h_prop
+        pi = p_prop
+        gamma = gamma_prop
+    
+    return h, pi, gamma
+
+    #sample tau
+    #select relevant covariates
+def sample_tau_beta():    
+    G = genotype.iloc[:, 4:984]
+    G = G.iloc[gamma,]
+    G_gamma = G.loc[G.index==1].T.reset_index(drop=True)
+    
+    G_square = np.square(G)
+    s_j = np.sum(G_square, axis =1)
+    sigma_a = h/(1 - h) * (1 / s_j.sum())
+    
+    omega = ((1/sigma_a**2) * np.identity(G_gamma.shape[1]) + G_gamma.T.dot(G_gamma))**(-1)
+    
+    Xty = G_gamma.T.dot(phenotype)
+    Ytx = phenotype.T.dot(G_gamma)
+    tau_scale = phenotype.T.dot(phenotype)-Ytx.dot(omega).dot(Xty)
+    
+    tau = np.random.gamma(n/2, scale = 0.5*tau_scale, size = None)
+    
+    #sample beta
+    mean_beta = omega.dot(Xty)
+    cov_beta = np.multiply((1/tau), omega)
+    beta = np.random.multivariate_normal(mean_beta, cov_beta)
+    
+    return tau, beta
+
+    
 
 
 
 if __name__ == '__main__':
+   
+    #global variables
+    n = 980 #subjects
+    p = 5 #snps
+    m = 10 #pc covariates
+    M = 3
+    
     #READ DATA 840 people by 5 rsIDs
-
-    genotype = pd.read_csv('test.mgt.txt', sep = " ", header = None)
-    phenotype = pd.read_csv('test.ph.txt', sep = " ", header = None)
-    principal_components = pd.read_csv('qcvcf.eigenvec', sep = " ", header = None)
+    genotype = pd.read_csv('data/test.mgt.txt', sep = " ", header = None)
+    phenotype = pd.read_csv('data/test.ph.txt', sep = " ", header = None)
+    principal_components = pd.read_csv('data/qcvcf.eigenvec', sep = " ", header = None)
+    
     #set priors
     tau, mu, h, pi, gamma, beta, alpha = set_prior_values(genotype,phenotype,principal_components)
+    
+    iterations = 1000
+    #ITERATION START
     #propose h,p,gamma for Metropolis
+    for (i in 1: iterations):
+        print i
+    h_prop, pi_prop, gamma_prop = propose(gamma, h, p)
     
-    h_prop, pi_prop, gamma_prop = propose(gamma, h)
-    r =calculate_r()
+    h, pi, gamma = calculate_r(h_prop, pi_prop, gamma_prop, h, pi, gamma) #still not done
     
-    u=np.random.uniform(0,1)
+    tau,beta = sample_tau_beta( )
     
-    if (u<r): 
-        h=h_prop
-        pi=p_prop
-        gamma=gamma_prop
-        
-        
-    #sample tau
+    #update alpha
+    beta = beta.iloc[gamma,]
+    beta_gamma = beta.loc[beta.index==1].reset_index(drop=True)
+    G_gamma.reset_index(drop=True)
     
-    #sample beta
+    Q = phenotype - G_gamma.dot(beta_gamma) #solve this!
+    pref = n / (n + 1)
+    inv = linalg.inv(X.T.dot(X))
+    Xtq = X.T.dot(Q)
     
+    mean_alpha = pref *inv.dot(Xtq)
+    cov_alpha = np.multiply((pref / tau) , )
+    alpha = np.random.multivariate_normal(mean_alpha, cov_alpha)
     
+    #ITERATION END
     
-    
+    PIP= X_included / 1000 #may have high sampling variance 
 
-
-
-#add
-
-
-
+    
+  
 
 
 
